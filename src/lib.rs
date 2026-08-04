@@ -1,10 +1,6 @@
-use axum::{
-    Json,
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
+use http::{Response, StatusCode, header::CONTENT_TYPE};
 use serde::Serialize;
-use serde_json::{Map, Value};
+use serde_json::{Error, Map, Value};
 
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -82,13 +78,14 @@ where
             http_status,
         }
     }
-}
 
-impl<T> IntoResponse for JSendResponse<T>
-where
-    T: Serialize,
-{
-    fn into_response(self) -> Response {
-        (self.http_status, Json(self)).into_response()
+    pub fn into_response(self) -> Result<Response<Vec<u8>>, Error> {
+        let body = serde_json::to_vec(&self)?;
+
+        Ok(http::Response::builder()
+            .status(self.http_status)
+            .header(CONTENT_TYPE, "application/json")
+            .body(body)
+            .expect("status code and header value are always valid"))
     }
 }
