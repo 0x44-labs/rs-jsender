@@ -1,3 +1,8 @@
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use serde::Serialize;
 use serde_json::{Map, Value};
 
@@ -18,6 +23,8 @@ pub struct JSendResponse<T> {
     pub(crate) code: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) data: Option<JSendData<T>>,
+    #[serde(skip)]
+    pub(crate) http_status: StatusCode,
 }
 
 #[derive(Serialize)]
@@ -31,16 +38,17 @@ impl<T> JSendResponse<T>
 where
     T: Serialize,
 {
-    pub fn success(data: Option<T>) -> Self {
+    pub fn success(data: Option<T>, http_status: StatusCode) -> Self {
         Self {
             status: JSendStatus::Success,
             data: Some(JSendData::Data(data)),
             message: None,
             code: None,
+            http_status,
         }
     }
 
-    pub fn fail<I, K, V>(data: I) -> Self
+    pub fn fail<I, K, V>(data: I, http_status: StatusCode) -> Self
     where
         I: IntoIterator<Item = (K, V)>,
         K: Into<String>,
@@ -56,6 +64,7 @@ where
             data: Some(JSendData::Value(Value::Object(fail_data))),
             message: None,
             code: None,
+            http_status,
         }
     }
 
@@ -63,12 +72,23 @@ where
         message: impl Into<String>,
         code: Option<usize>,
         data: Option<Value>,
+        http_status: StatusCode,
     ) -> Self {
         Self {
             status: JSendStatus::Error,
             message: Some(message.into()),
             code,
             data: data.map(JSendData::Value),
+            http_status,
         }
+    }
+}
+
+impl<T> IntoResponse for JSendResponse<T>
+where
+    T: Serialize,
+{
+    fn into_response(self) -> Response {
+        (self.http_status, Json(self)).into_response()
     }
 }
