@@ -4,30 +4,30 @@ use serde_json::{Error, Map, Value};
 
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
-pub enum JSendStatus {
+enum Status {
     Success,
     Fail,
     Error,
 }
 
 #[derive(Serialize)]
+#[serde(untagged)]
+enum Data<T> {
+    Data(Option<T>),
+    Value(Value),
+}
+
+#[derive(Serialize)]
 pub struct JSendResponse<T> {
-    status: JSendStatus,
+    status: Status,
     #[serde(skip_serializing_if = "Option::is_none")]
     message: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     code: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<JSendData<T>>,
+    data: Option<Data<T>>,
     #[serde(skip)]
     http_status: StatusCode,
-}
-
-#[derive(Serialize)]
-#[serde(untagged)]
-pub enum JSendData<T> {
-    Data(Option<T>),
-    Value(Value),
 }
 
 impl<T> JSendResponse<T>
@@ -36,8 +36,8 @@ where
 {
     pub fn success(data: Option<T>, http_status: StatusCode) -> Self {
         Self {
-            status: JSendStatus::Success,
-            data: Some(JSendData::Data(data)),
+            status: Status::Success,
+            data: Some(Data::Data(data)),
             message: None,
             code: None,
             http_status,
@@ -56,8 +56,8 @@ where
             .collect();
 
         Self {
-            status: JSendStatus::Fail,
-            data: Some(JSendData::Value(Value::Object(fail_data))),
+            status: Status::Fail,
+            data: Some(Data::Value(Value::Object(fail_data))),
             message: None,
             code: None,
             http_status,
@@ -71,10 +71,10 @@ where
         http_status: StatusCode,
     ) -> Self {
         Self {
-            status: JSendStatus::Error,
+            status: Status::Error,
             message: Some(message.into()),
             code,
-            data: data.map(JSendData::Value),
+            data: data.map(Data::Value),
             http_status,
         }
     }
