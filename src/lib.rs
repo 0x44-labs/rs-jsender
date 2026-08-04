@@ -12,15 +12,15 @@ pub enum JSendStatus {
 
 #[derive(Serialize)]
 pub struct JSendResponse<T> {
-    pub(crate) status: JSendStatus,
+    status: JSendStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) message: Option<String>,
+    message: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) code: Option<usize>,
+    code: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) data: Option<JSendData<T>>,
+    data: Option<JSendData<T>>,
     #[serde(skip)]
-    pub(crate) http_status: StatusCode,
+    http_status: StatusCode,
 }
 
 #[derive(Serialize)]
