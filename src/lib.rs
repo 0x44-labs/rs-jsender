@@ -34,6 +34,19 @@ impl<T> JSendResponse<T>
 where
     T: Serialize,
 {
+    /// Builds a [JSend success](github.com/omniti-labs/jsend#success)
+    /// response.
+    ///
+    /// A `success` response means the call completed without error. The
+    /// `status` field is always serialised as **"success"**, and `data` is
+    /// always present as the wrapper for whatever the call returns. Pass
+    /// [None] when there is nothing to return, such as after a delete; it
+    /// serialises as `data: null` rather than omitting the key.
+    ///
+    /// The `http_status` parameter is the HTTP status code this response will
+    /// be paired to when passed to [into_response](Self::into_response). The
+    /// specification does not prescribe one, but a **`2xx`** code is typical
+    /// for a success response.
     pub fn success(data: Option<T>, http_status: StatusCode) -> Self {
         Self {
             status: Status::Success,
@@ -44,6 +57,19 @@ where
         }
     }
 
+    /// Builds a [JSend fail](github.com/omniti-labs/jsend#fail) response.
+    ///
+    /// A `fail` response means the call was rejected due to invalid data or
+    /// call conditions. The `status` field is always serialised as **"fail"**.
+    /// The `data` field is built from the given key/value pairs into a JSON
+    /// object describing what went wrong, typically validation errors keyed by
+    /// he offending field name. An empty iterator produces `data: {}` rather
+    /// than omitting the key.
+    ///
+    /// The `http_status` parameter is the HTTP status code this response will
+    /// be paired to when passed to [into_response](Self::into_response). The
+    /// specification does not prescribe one, but a **`4xx`** code is typical
+    /// for a fail response.
     pub fn fail<I, K, V>(data: I, http_status: StatusCode) -> Self
     where
         I: IntoIterator<Item = (K, V)>,
@@ -64,6 +90,20 @@ where
         }
     }
 
+    /// Builds a [JSend error](github.com/omniti-labs/jsend#error) response.
+    ///
+    /// An `error` response means a server-side failure has occurred. The
+    /// `status` field is always serialised as **"error"**, and `message` is
+    /// always present as a meaningful user-readable message explaining what
+    /// went wrong. The `code` and `data` fields are optional, where `code` is
+    /// a numeric error code, and `data` is a free-form container for extra
+    /// information about the error (e.g. conditions causing the error, stack
+    /// trace). Passing `None` for either omits that key.
+    ///
+    /// The `http_status` parameter is the HTTP status code this response will
+    /// be paired to when passed to [into_response](Self::into_response). The
+    /// specification does not prescribe one, but a **`5xx`** code is typical
+    /// for an error response.
     pub fn error(
         message: impl Into<String>,
         code: Option<usize>,
@@ -79,6 +119,17 @@ where
         }
     }
 
+    /// Serialises this `JSendResponse` to JSON and wraps it in an
+    /// [`http::Response`].
+    ///
+    /// This serialises [self] to a JSON byte vector and builds an http
+    /// response using the `http_status` this response was constructed with.
+    /// The `Content-Type` header is set to `application/json` so callers
+    /// reading the raw `http::Response` know how to interpret the body.
+    ///
+    /// The [JSend specification](github.com/omniti-labs/jsend#whither-http)
+    /// advises pairing a JSend response body with whatever HTTP status code is
+    /// most appropriate to it; this method carries out that pairing.
     pub fn into_response(self) -> Result<Response<Vec<u8>>, Error> {
         let body = serde_json::to_vec(&self)?;
 
