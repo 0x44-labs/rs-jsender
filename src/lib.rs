@@ -1,3 +1,42 @@
+//! A Pure Rust implementation of the
+//! [JSend](https://github.com/omniti-labs/jsend) specification, providing
+//! constructors for `success`, `fail`, and `error` response bodies. Each
+//! response is paired with the [StatusCode] it should be served with, which is
+//! applied when serialising into a [Response].
+//!
+//! A **JSend response** is one of three kinds:
+//! - A **success** response means the call completed without error, and always
+//! always carries a `data` field wrapping whatever the call returns.
+//! - A **fail** response means the call was rejected due to invalid data or
+//! call conditions, and carries a `data` object describing what went wrong.
+//! - An **error** response means a server-side failure occurred, and always
+//! carries a `message`, with optional `code` and `data` fields for further
+//! detail.
+//!
+//! Any [JSendResponse] can be serialised into an [http::Response] via the
+//! [into_response](JSendResponse::into_response) method.
+//!
+//! # Example
+//! ```
+//! use http::StatusCode;
+//! use jsender::JSendResponse;
+//! use serde_json::json;
+//!
+//! fn main() {
+//!     let response = JSendResponse::success(
+//!         Some(json!({
+//!             "title": "Touch",
+//!             "album": "Random Access Memories",
+//!             "writers": ["Daft Punk", "Julian Casablancas"],
+//!             "duration": 499
+//!         })),
+//!         StatusCode::OK,
+//!     );
+//!
+//!     let http_response = response.into_response();
+//!     assert!(http_response.is_ok());
+//! }
+//! ```
 use http::{Response, StatusCode, header::CONTENT_TYPE};
 use serde::Serialize;
 use serde_json::{Error, Map, Value};
@@ -17,6 +56,8 @@ enum Data<T> {
     Value(Value),
 }
 
+/// Represents a [JSend](https://github.com/omniti-labs/jsend) response body,
+/// generic over the [success](Self::success) response's data type `T`.
 #[derive(Serialize)]
 pub struct JSendResponse<T> {
     status: Status,
@@ -34,7 +75,7 @@ impl<T> JSendResponse<T>
 where
     T: Serialize,
 {
-    /// Builds a [JSend success](github.com/omniti-labs/jsend#success)
+    /// Builds a [JSend success](https://github.com/omniti-labs/jsend#success)
     /// response.
     ///
     /// A `success` response means the call completed without error. The
@@ -57,7 +98,8 @@ where
         }
     }
 
-    /// Builds a [JSend fail](github.com/omniti-labs/jsend#fail) response.
+    /// Builds a [JSend fail](https://github.com/omniti-labs/jsend#fail)
+    /// response.
     ///
     /// A `fail` response means the call was rejected due to invalid data or
     /// call conditions. The `status` field is always serialised as **"fail"**.
@@ -90,7 +132,8 @@ where
         }
     }
 
-    /// Builds a [JSend error](github.com/omniti-labs/jsend#error) response.
+    /// Builds a [JSend error](https://github.com/omniti-labs/jsend#error)
+    /// response.
     ///
     /// An `error` response means a server-side failure has occurred. The
     /// `status` field is always serialised as **"error"**, and `message` is
@@ -127,7 +170,8 @@ where
     /// The `Content-Type` header is set to `application/json` so callers
     /// reading the raw `http::Response` know how to interpret the body.
     ///
-    /// The [JSend specification](github.com/omniti-labs/jsend#whither-http)
+    /// The
+    /// [JSend specification](https://github.com/omniti-labs/jsend#whither-http)
     /// advises pairing a JSend response body with whatever HTTP status code is
     /// most appropriate to it; this method carries out that pairing.
     pub fn into_response(self) -> Result<Response<Vec<u8>>, Error> {
