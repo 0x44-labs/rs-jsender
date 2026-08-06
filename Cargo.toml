@@ -1,6 +1,17 @@
 [package]
 name = "jsender"
 version = "0.1.0"
+description = """
+Pure Rust implementation of the JSend specification for JSON response bodies.
+"""
+authors = ["Determination Labs Team"]
+license = "MIT"
+documentation = "https://docs.rs/jsender"
+homepage = "https://github.com/0x44-labs/rs-jsender"
+repository = "https://github.com/0x44-labs/rs-jsender"
+keywords = ["jsend", "json", "http", "serde"]
+categories = ["web-programming::http-server", "encoding"]
+readme = "README.md"
 edition = "2024"
 
 [dependencies]

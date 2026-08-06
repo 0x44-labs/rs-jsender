@@ -1,8 +1,8 @@
 //! A Pure Rust implementation of the
-//! [JSend](https://github.com/omniti-labs/jsend) specification, providing
-//! constructors for `success`, `fail`, and `error` response bodies. Each
-//! response is paired with the [StatusCode] it should be served with, which is
-//! applied when serialising into a [Response].
+//! [JSend](https://github.com/omniti-labs/jsend) specification for JSON
+//! responses, providing constructors for `success`, `fail`, and `error`
+//! response bodies. Each response is paired with the [StatusCode] it should be
+//! served with, which is applied when serialising into a [Response].
 //!
 //! A **JSend response** is one of three kinds:
 //! - A **success** response means the call completed without error, and always
