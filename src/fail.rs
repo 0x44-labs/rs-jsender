@@ -80,7 +80,7 @@ mod tests {
     }
 
     #[test]
-    fn fail_builds_data_object_from_pairs() {
+    fn builds_data_object_from_pairs() {
         let response = Fail::new(
             [("title", "is required"), ("duration", "must be positive")],
             StatusCode::UNPROCESSABLE_ENTITY,
@@ -95,7 +95,7 @@ mod tests {
     }
 
     #[test]
-    fn fail_accepts_non_string_values() {
+    fn accepts_non_string_values() {
         let response = Fail::new(
             [("duration", json!(-5))],
             StatusCode::UNPROCESSABLE_ENTITY,
@@ -107,7 +107,7 @@ mod tests {
     }
 
     #[test]
-    fn fail_no_entries_serialises_empty_object() {
+    fn no_entries_serialises_empty_object() {
         let response =
             Fail::new(Vec::<(&str, &str)>::new(), StatusCode::BAD_REQUEST);
 
@@ -116,7 +116,7 @@ mod tests {
     }
 
     #[test]
-    fn fail_status_is_fail() {
+    fn status_is_fail() {
         let response = Fail::new(
             [("title", "is required"), ("duration", "must be positive")],
             StatusCode::UNPROCESSABLE_ENTITY,
@@ -127,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    fn fail_data_returns_constructed_object() {
+    fn data_returns_constructed_object() {
         let response = Fail::new(
             [("title", "is required"), ("duration", "must be positive")],
             StatusCode::UNPROCESSABLE_ENTITY,

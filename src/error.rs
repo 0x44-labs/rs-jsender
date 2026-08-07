@@ -92,7 +92,7 @@ mod tests {
     }
 
     #[test]
-    fn error_requires_only_message() {
+    fn requires_only_message() {
         let response = Error::new(
             "playback service unreachable",
             None,
@@ -113,7 +113,7 @@ mod tests {
     }
 
     #[test]
-    fn error_includes_code_when_present() {
+    fn includes_code_when_present() {
         let response = Error::new(
             "rate limited",
             Some(67),
@@ -126,7 +126,7 @@ mod tests {
     }
 
     #[test]
-    fn error_includes_data_when_present() {
+    fn includes_data_when_present() {
         let response = Error::new(
             "upstream failure",
             None,
@@ -139,7 +139,7 @@ mod tests {
     }
 
     #[test]
-    fn error_status_is_error() {
+    fn status_is_error() {
         let response = Error::new(
             "playback service unreachable",
             None,
@@ -152,7 +152,7 @@ mod tests {
     }
 
     #[test]
-    fn error_message_returns_constructed_value() {
+    fn message_returns_constructed_value() {
         let response = Error::new(
             "playback service unreachable",
             None,
@@ -165,7 +165,7 @@ mod tests {
     }
 
     #[test]
-    fn error_code_returns_constructed_value() {
+    fn code_returns_constructed_value() {
         let response = Error::new(
             "rate limited",
             Some(67),
@@ -178,7 +178,7 @@ mod tests {
     }
 
     #[test]
-    fn error_code_returns_none_when_absent() {
+    fn code_returns_none_when_absent() {
         let response = Error::new(
             "playback service unreachable",
             None,
@@ -191,7 +191,7 @@ mod tests {
     }
 
     #[test]
-    fn error_data_returns_constructed_value() {
+    fn data_returns_constructed_value() {
         let response = Error::new(
             "upstream failure",
             None,
@@ -207,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn error_data_returns_none_when_absent() {
+    fn data_returns_none_when_absent() {
         let response = Error::new(
             "playback service unreachable",
             None,
