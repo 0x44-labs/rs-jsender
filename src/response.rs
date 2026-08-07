@@ -36,7 +36,7 @@ pub trait IntoResponse {
 }
 
 /// The status discriminator of a JSend response body, indicating whether the
-/// call was a [Success], [Fail], or [Error].
+/// call was a Success, Fail, or Error.
 #[derive(Serialize, Debug, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
