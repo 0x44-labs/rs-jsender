@@ -73,7 +73,7 @@ pub trait IntoResponse {
 
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
-enum Status {
+pub enum Status {
     Success,
     Fail,
     Error,
@@ -107,6 +107,18 @@ impl<T: Serialize> Success<T> {
             data,
             http_status,
         }
+    }
+
+    pub fn status(&self) -> &Status {
+        &self.status
+    }
+
+    pub fn data(&self) -> Option<&T> {
+        self.data.as_ref()
+    }
+
+    pub fn http_status(&self) -> StatusCode {
+        self.http_status
     }
 }
 
@@ -149,6 +161,18 @@ impl Fail {
             data: Value::Object(fail_data),
             http_status,
         }
+    }
+
+    pub fn status(&self) -> &Status {
+        &self.status
+    }
+
+    pub fn data(&self) -> &Value {
+        &self.data
+    }
+
+    pub fn http_status(&self) -> StatusCode {
+        self.http_status
     }
 }
 
@@ -193,6 +217,26 @@ impl Error {
             data,
             http_status,
         }
+    }
+
+    pub fn status(&self) -> &Status {
+        &self.status
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    pub fn code(&self) -> Option<usize> {
+        self.code
+    }
+
+    pub fn data(&self) -> Option<&Value> {
+        self.data.as_ref()
+    }
+
+    pub fn http_status(&self) -> StatusCode {
+        self.http_status
     }
 }
 
