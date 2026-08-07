@@ -67,9 +67,13 @@ pub trait IntoResponse {
             .expect("status code and header value are always valid"))
     }
 
+    /// Returns the HTTP status code this response should be served with, as
+    /// given at construction time.
     fn http_status(&self) -> StatusCode;
 }
 
+/// The status discriminator of a JSend response body, indicating whether the
+/// call was a [Success], [Fail], or [Error].
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
@@ -78,6 +82,12 @@ pub enum Status {
     Error,
 }
 
+/// Represents a [JSend success](https://github.com/omniti-labs/jsend#success)
+/// response body, generic over the data type `T`.
+///
+/// A `success` response means the call completed without error. The `status`
+/// field is always serialised as **"success"**, and the `data` field is always
+/// present as the wrapper for whatever the call returns.
 #[derive(Serialize)]
 pub struct Success<T> {
     status: Status,
@@ -87,14 +97,12 @@ pub struct Success<T> {
 }
 
 impl<T: Serialize> Success<T> {
-    /// Builds a [JSend success](https://github.com/omniti-labs/jsend#success)
-    /// response.
+    /// Builds a new `Success` response.
     ///
-    /// A `success` response means the call completed without error. The
-    /// `status` field is always serialised as **"success"**, and `data` is
-    /// always present as the wrapper for whatever the call returns. Pass
-    /// [None] when there is nothing to return, such as after a delete; it
-    /// serialises as `data: null`, never omitting the key.
+    /// Pass the data to return in the response body as [Some], or [None] when
+    /// there is nothing to return, such as after a delete. Passing
+    /// `Some(data)` serialises as the wrapped value under the `data` key, and
+    /// passing `None` serialises as `data: null`, never omitting the key.
     ///
     /// The `http_status` parameter is the HTTP status code this response will
     /// be paired with when passed to [into_response](Self::into_response). The
@@ -108,10 +116,13 @@ impl<T: Serialize> Success<T> {
         }
     }
 
+    /// Returns the [Status] this response was constructed with; always
+    /// [Success](Status::Success).
     pub fn status(&self) -> &Status {
         &self.status
     }
 
+    /// Returns the data this response was constructed with, if any.
     pub fn data(&self) -> Option<&T> {
         self.data.as_ref()
     }
@@ -123,6 +134,12 @@ impl<T: Serialize> IntoResponse for Success<T> {
     }
 }
 
+/// Represents a [JSend fail](https://github.com/omniti-labs/jsend#fail)
+/// response body.
+///
+/// A `fail` response means the call was rejected due to invalid data or call
+/// conditions. The `status` field is always serialised as **"fail"**, and
+/// the `data` field is always present.
 #[derive(Serialize)]
 pub struct Fail {
     status: Status,
@@ -132,15 +149,12 @@ pub struct Fail {
 }
 
 impl Fail {
-    /// Builds a [JSend fail](https://github.com/omniti-labs/jsend#fail)
-    /// response.
+    /// Builds a new `Fail` response.
     ///
-    /// A `fail` response means the call was rejected due to invalid data or
-    /// call conditions. The `status` field is always serialised as **"fail"**.
-    /// The `data` field is built from the given key/value pairs into a JSON
-    /// object describing what went wrong, typically validation errors keyed by
-    /// the offending field name. An empty iterator produces `data: {}`, never
-    /// omitting the key.
+    /// Pass the key/value pairs describing what went wrong (typically
+    /// validation errors keyed by the offending field name), building `data`
+    /// as a JSON object from each pair. An empty iterator produces `data: {}`,
+    /// never omitting the key.
     ///
     /// The `http_status` parameter is the HTTP status code this response will
     /// be paired with when passed to [into_response](Self::into_response). The
@@ -164,10 +178,14 @@ impl Fail {
         }
     }
 
+    /// Returns the [Status] this response was constructed with; always
+    /// [Fail](Status::Fail).
     pub fn status(&self) -> &Status {
         &self.status
     }
 
+    /// Returns the data object built from the pairs this response was
+    /// constructed with.
     pub fn data(&self) -> &Value {
         &self.data
     }
@@ -179,6 +197,12 @@ impl IntoResponse for Fail {
     }
 }
 
+/// Represents a [JSend error](https://github.com/omniti-labs/jsend#error)
+/// response body.
+///
+/// An `error` response means a server-side failure has occurred. The `status`
+/// field is always serialised as **"error"**, and the `message` field is
+/// always present. The `code` and `data` fields are optional.
 #[derive(Serialize)]
 pub struct Error {
     status: Status,
@@ -192,16 +216,13 @@ pub struct Error {
 }
 
 impl Error {
-    /// Builds a [JSend error](https://github.com/omniti-labs/jsend#error)
-    /// response.
+    /// Builds a new `Error` response.
     ///
-    /// An `error` response means a server-side failure has occurred. The
-    /// `status` field is always serialised as **"error"**, and `message` is
-    /// always present as a meaningful user-readable message explaining what
-    /// went wrong. The `code` and `data` fields are optional, where `code` is
-    /// a numeric error code, and `data` is a free-form container for extra
-    /// information about the error (e.g. conditions causing the error, stack
-    /// trace). Passing `None` for either omits that key.
+    /// Pass the `message` as a meaningful user-readable message explaining
+    /// what went wrong. The optional `code` is a numeric error code, and the
+    /// optional `data` is a free-form container for extra information about
+    /// the error (e.g. conditions causing the error, stack trace). Passing
+    /// `None` for either omits that key.
     ///
     /// The `http_status` parameter is the HTTP status code this response will
     /// be paired with when passed to [into_response](Self::into_response). The
@@ -222,18 +243,24 @@ impl Error {
         }
     }
 
+    /// Returns the [Status] this response was constructed with; always
+    /// [Error](Status::Error).
     pub fn status(&self) -> &Status {
         &self.status
     }
 
+    /// Returns the message this response was constructed with.
     pub fn message(&self) -> &str {
         &self.message
     }
 
+    /// Returns the numeric error code this response was constructed with,
+    /// if any.
     pub fn code(&self) -> Option<usize> {
         self.code
     }
 
+    /// Returns the data this response was constructed with, if any.
     pub fn data(&self) -> Option<&Value> {
         self.data.as_ref()
     }
