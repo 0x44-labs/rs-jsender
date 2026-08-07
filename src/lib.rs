@@ -41,6 +41,9 @@ use http::{Response, StatusCode, header::CONTENT_TYPE};
 use serde::Serialize;
 use serde_json::Value;
 
+/// Enables a [JSend](https://github.com/omniti-labs/jsend) response body to be
+/// serialised and paired with an HTTP [StatusCode], producing a complete
+/// [`http::Response`].
 pub trait IntoResponse {
     /// Serialises this response to JSON and wraps it in an [`http::Response`].
     ///
