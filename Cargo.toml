@@ -1,6 +1,6 @@
 [package]
 name = "jsender"
-version = "0.1.0"
+version = "0.2.0"
 description = """
 Pure Rust implementation of the JSend specification for JSON response bodies.
 """

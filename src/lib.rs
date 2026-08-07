@@ -7,12 +7,12 @@
 //!
 //! A **JSend response** is one of three kinds:
 //! - A **success** response means the call completed without error, and always
-//! always carries a `data` field wrapping whatever the call returns.
+//!   always carries a `data` field wrapping whatever the call returns.
 //! - A **fail** response means the call was rejected due to invalid data or
-//! call conditions, and carries a `data` object describing what went wrong.
+//!   call conditions, and carries a `data` object describing what went wrong.
 //! - An **error** response means a server-side failure occurred, and always
-//! carries a `message`, with optional `code` and `data` fields for a numeric
-//! error code and further details respectively.
+//!   carries a `message`, with optional `code` and `data` fields for a numeric
+//!   error code and further details respectively.
 //!
 //! Each type implements [IntoResponse], allowing each response type to be
 //! serialised into an [http::Response] via the
