@@ -116,8 +116,10 @@ impl<T: Serialize> Success<T> {
     pub fn data(&self) -> Option<&T> {
         self.data.as_ref()
     }
+}
 
-    pub fn http_status(&self) -> StatusCode {
+impl<T: Serialize> IntoResponse for Success<T> {
+    fn http_status(&self) -> StatusCode {
         self.http_status
     }
 }
@@ -170,8 +172,10 @@ impl Fail {
     pub fn data(&self) -> &Value {
         &self.data
     }
+}
 
-    pub fn http_status(&self) -> StatusCode {
+impl IntoResponse for Fail {
+    fn http_status(&self) -> StatusCode {
         self.http_status
     }
 }
@@ -234,8 +238,10 @@ impl Error {
     pub fn data(&self) -> Option<&Value> {
         self.data.as_ref()
     }
+}
 
-    pub fn http_status(&self) -> StatusCode {
+impl IntoResponse for Error {
+    fn http_status(&self) -> StatusCode {
         self.http_status
     }
 }
