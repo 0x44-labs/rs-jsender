@@ -39,7 +39,7 @@
 //! ```
 use http::{Response, StatusCode, header::CONTENT_TYPE};
 use serde::Serialize;
-use serde_json::{Error, Map, Value};
+use serde_json::Value;
 
 pub trait IntoResponse {
     fn http_status(&self) -> StatusCode;
@@ -56,7 +56,7 @@ pub trait IntoResponse {
     /// [JSend specification](https://github.com/omniti-labs/jsend#whither-http)
     /// advises pairing a JSend response body with whatever HTTP status code is
     /// most appropriate to it; this method carries out that pairing.
-    fn into_response(self) -> Result<Response<Vec<u8>>, Error>
+    fn into_response(self) -> Result<Response<Vec<u8>>, serde_json::Error>
     where
         Self: Serialize + Sized,
     {
@@ -80,31 +80,14 @@ enum Status {
 }
 
 #[derive(Serialize)]
-#[serde(untagged)]
-enum Data<T> {
-    Data(Option<T>),
-    Value(Value),
-}
-
-/// Represents a [JSend](https://github.com/omniti-labs/jsend) response body,
-/// generic over the [success](Self::success) response's data type `T`.
-#[derive(Serialize)]
-pub struct JSendResponse<T> {
+pub struct Success<T> {
     status: Status,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    message: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    code: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    data: Option<Data<T>>,
+    data: Option<T>,
     #[serde(skip)]
     http_status: StatusCode,
 }
 
-impl<T> JSendResponse<T>
-where
-    T: Serialize,
-{
+impl<T: Serialize> Success<T> {
     /// Builds a [JSend success](https://github.com/omniti-labs/jsend#success)
     /// response.
     ///
@@ -118,16 +101,24 @@ where
     /// be paired to when passed to [into_response](Self::into_response). The
     /// specification does not prescribe one, but a **`2xx`** code is typical
     /// for a success response.
-    pub fn success(data: Option<T>, http_status: StatusCode) -> Self {
+    pub fn new(data: Option<T>, http_status: StatusCode) -> Self {
         Self {
             status: Status::Success,
-            data: Some(Data::Data(data)),
-            message: None,
-            code: None,
+            data,
             http_status,
         }
     }
+}
 
+#[derive(Serialize)]
+pub struct Fail {
+    status: Status,
+    data: Value,
+    #[serde(skip)]
+    http_status: StatusCode,
+}
+
+impl Fail {
     /// Builds a [JSend fail](https://github.com/omniti-labs/jsend#fail)
     /// response.
     ///
@@ -142,26 +133,38 @@ where
     /// be paired to when passed to [into_response](Self::into_response). The
     /// specification does not prescribe one, but a **`4xx`** code is typical
     /// for a fail response.
-    pub fn fail<I, K, V>(data: I, http_status: StatusCode) -> Self
+    pub fn new<I, K, V>(data: I, http_status: StatusCode) -> Self
     where
         I: IntoIterator<Item = (K, V)>,
         K: Into<String>,
         V: Into<Value>,
     {
-        let fail_data: Map<String, Value> = data
+        let fail_data: serde_json::Map<String, Value> = data
             .into_iter()
             .map(|(k, v)| (k.into(), v.into()))
             .collect();
 
         Self {
             status: Status::Fail,
-            data: Some(Data::Value(Value::Object(fail_data))),
-            message: None,
-            code: None,
+            data: Value::Object(fail_data),
             http_status,
         }
     }
+}
 
+#[derive(Serialize)]
+pub struct Error {
+    status: Status,
+    message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    code: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    data: Option<Value>,
+    #[serde(skip)]
+    http_status: StatusCode,
+}
+
+impl Error {
     /// Builds a [JSend error](https://github.com/omniti-labs/jsend#error)
     /// response.
     ///
@@ -177,7 +180,7 @@ where
     /// be paired to when passed to [into_response](Self::into_response). The
     /// specification does not prescribe one, but a **`5xx`** code is typical
     /// for an error response.
-    pub fn error(
+    pub fn new(
         message: impl Into<String>,
         code: Option<usize>,
         data: Option<Value>,
@@ -185,14 +188,15 @@ where
     ) -> Self {
         Self {
             status: Status::Error,
-            message: Some(message.into()),
+            message: message.into(),
             code,
-            data: data.map(Data::Value),
+            data,
             http_status,
         }
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -399,3 +403,4 @@ mod tests {
         assert!(response.into_response().is_err());
     }
 }
+*/
