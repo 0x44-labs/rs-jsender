@@ -42,12 +42,9 @@ use serde::Serialize;
 use serde_json::Value;
 
 pub trait IntoResponse {
-    fn http_status(&self) -> StatusCode;
-
-    /// Serialises this `JSendResponse` to JSON and wraps it in an
-    /// [`http::Response`].
+    /// Serialises this response to JSON and wraps it in an [`http::Response`].
     ///
-    /// This serialises [self] to a JSON byte vector and builds an http
+    /// This serialises `self` to a JSON byte vector and builds an http
     /// response using the `http_status` this response was constructed with.
     /// The `Content-Type` header is set to `application/json` so callers
     /// reading the raw `http::Response` know how to interpret the body.
@@ -69,6 +66,8 @@ pub trait IntoResponse {
             .body(body)
             .expect("status code and header value are always valid"))
     }
+
+    fn http_status(&self) -> StatusCode;
 }
 
 #[derive(Serialize)]
@@ -95,10 +94,10 @@ impl<T: Serialize> Success<T> {
     /// `status` field is always serialised as **"success"**, and `data` is
     /// always present as the wrapper for whatever the call returns. Pass
     /// [None] when there is nothing to return, such as after a delete; it
-    /// serialises as `data: null` rather than omitting the key.
+    /// serialises as `data: null`, never omitting the key.
     ///
     /// The `http_status` parameter is the HTTP status code this response will
-    /// be paired to when passed to [into_response](Self::into_response). The
+    /// be paired with when passed to [into_response](Self::into_response). The
     /// specification does not prescribe one, but a **`2xx`** code is typical
     /// for a success response.
     pub fn new(data: Option<T>, http_status: StatusCode) -> Self {
@@ -140,11 +139,11 @@ impl Fail {
     /// call conditions. The `status` field is always serialised as **"fail"**.
     /// The `data` field is built from the given key/value pairs into a JSON
     /// object describing what went wrong, typically validation errors keyed by
-    /// he offending field name. An empty iterator produces `data: {}` rather
-    /// than omitting the key.
+    /// the offending field name. An empty iterator produces `data: {}`, never
+    /// omitting the key.
     ///
     /// The `http_status` parameter is the HTTP status code this response will
-    /// be paired to when passed to [into_response](Self::into_response). The
+    /// be paired with when passed to [into_response](Self::into_response). The
     /// specification does not prescribe one, but a **`4xx`** code is typical
     /// for a fail response.
     pub fn new<I, K, V>(data: I, http_status: StatusCode) -> Self
@@ -205,7 +204,7 @@ impl Error {
     /// trace). Passing `None` for either omits that key.
     ///
     /// The `http_status` parameter is the HTTP status code this response will
-    /// be paired to when passed to [into_response](Self::into_response). The
+    /// be paired with when passed to [into_response](Self::into_response). The
     /// specification does not prescribe one, but a **`5xx`** code is typical
     /// for an error response.
     pub fn new(
