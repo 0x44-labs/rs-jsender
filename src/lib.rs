@@ -77,7 +77,7 @@ pub trait IntoResponse {
 
 /// The status discriminator of a JSend response body, indicating whether the
 /// call was a [Success], [Fail], or [Error].
-#[derive(Serialize)]
+#[derive(Serialize, Debug, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
     Success,
@@ -333,6 +333,41 @@ mod tests {
     }
 
     #[test]
+    fn success_status_is_success() {
+        let response = Success::new(
+            Some(json!({"title": "Touch", "album": "Random Access Memories",})),
+            StatusCode::OK,
+        );
+
+        // Getter must return Success
+        assert_eq!(response.status(), &Status::Success);
+    }
+
+    #[test]
+    fn success_data_returns_constructed_value() {
+        let response = Success::new(
+            Some(json!({"title": "Touch", "album": "Random Access Memories",})),
+            StatusCode::OK,
+        );
+
+        // Getter must return the data the response was constructed with
+        assert_eq!(
+            response.data(),
+            Some(
+                &json!({"title": "Touch", "album": "Random Access Memories",})
+            )
+        );
+    }
+
+    #[test]
+    fn success_data_returns_none_when_absent() {
+        let response = Success::<Value>::new(None, StatusCode::NO_CONTENT);
+
+        // Getter must return None when constructed without data
+        assert_eq!(response.data(), None);
+    }
+
+    #[test]
     fn fail_builds_data_object_from_pairs() {
         let response = Fail::new(
             [("title", "is required"), ("duration", "must be positive")],
@@ -366,6 +401,31 @@ mod tests {
 
         // An empty pair list must still produce a data object
         assert_eq!(to_json(response)["data"], json!({}));
+    }
+
+    #[test]
+    fn fail_status_is_fail() {
+        let response = Fail::new(
+            [("title", "is required"), ("duration", "must be positive")],
+            StatusCode::UNPROCESSABLE_ENTITY,
+        );
+
+        // Getter must return Fail
+        assert_eq!(response.status(), &Status::Fail);
+    }
+
+    #[test]
+    fn fail_data_returns_constructed_object() {
+        let response = Fail::new(
+            [("title", "is required"), ("duration", "must be positive")],
+            StatusCode::UNPROCESSABLE_ENTITY,
+        );
+
+        // Getter must return the object built from the pairs
+        assert_eq!(
+            response.data(),
+            &json!({"title": "is required", "duration": "must be positive"})
+        );
     }
 
     #[test]
@@ -413,6 +473,87 @@ mod tests {
 
         // Data must be included in the error response when provided
         assert_eq!(to_json(response)["data"]["trace_id"], "42736");
+    }
+
+    #[test]
+    fn error_status_is_error() {
+        let response = Error::new(
+            "playback service unreachable",
+            None,
+            None,
+            StatusCode::INTERNAL_SERVER_ERROR,
+        );
+
+        // Getter must return Error
+        assert_eq!(response.status(), &Status::Error);
+    }
+
+    #[test]
+    fn error_message_returns_constructed_value() {
+        let response = Error::new(
+            "playback service unreachable",
+            None,
+            None,
+            StatusCode::INTERNAL_SERVER_ERROR,
+        );
+
+        // Getter must return the constructed error message
+        assert_eq!(response.message(), "playback service unreachable");
+    }
+
+    #[test]
+    fn error_code_returns_constructed_value() {
+        let response = Error::new(
+            "rate limited",
+            Some(67),
+            None,
+            StatusCode::TOO_MANY_REQUESTS,
+        );
+
+        // Getter must return the constructed error code
+        assert_eq!(response.code(), Some(67));
+    }
+
+    #[test]
+    fn error_code_returns_none_when_absent() {
+        let response = Error::new(
+            "playback service unreachable",
+            None,
+            None,
+            StatusCode::INTERNAL_SERVER_ERROR,
+        );
+
+        // Getter must return None when constructed without a code
+        assert_eq!(response.code(), None);
+    }
+
+    #[test]
+    fn error_data_returns_constructed_value() {
+        let response = Error::new(
+            "upstream failure",
+            None,
+            Some(json!({"service": "playback_api", "trace_id": "42736"})),
+            StatusCode::BAD_GATEWAY,
+        );
+
+        // Getter must return the data the response was constructed with
+        assert_eq!(
+            response.data(),
+            Some(&json!({"service": "playback_api", "trace_id": "42736"}))
+        );
+    }
+
+    #[test]
+    fn error_data_returns_none_when_absent() {
+        let response = Error::new(
+            "playback service unreachable",
+            None,
+            None,
+            StatusCode::INTERNAL_SERVER_ERROR,
+        );
+
+        // Getter must return None when constructed without data
+        assert_eq!(response.data(), None);
     }
 
     #[test]
