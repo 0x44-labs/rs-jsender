@@ -41,6 +41,36 @@ use http::{Response, StatusCode, header::CONTENT_TYPE};
 use serde::Serialize;
 use serde_json::{Error, Map, Value};
 
+pub trait IntoResponse {
+    fn http_status(&self) -> StatusCode;
+
+    /// Serialises this `JSendResponse` to JSON and wraps it in an
+    /// [`http::Response`].
+    ///
+    /// This serialises [self] to a JSON byte vector and builds an http
+    /// response using the `http_status` this response was constructed with.
+    /// The `Content-Type` header is set to `application/json` so callers
+    /// reading the raw `http::Response` know how to interpret the body.
+    ///
+    /// The
+    /// [JSend specification](https://github.com/omniti-labs/jsend#whither-http)
+    /// advises pairing a JSend response body with whatever HTTP status code is
+    /// most appropriate to it; this method carries out that pairing.
+    fn into_response(self) -> Result<Response<Vec<u8>>, Error>
+    where
+        Self: Serialize + Sized,
+    {
+        let status = self.http_status();
+        let body = serde_json::to_vec(&self)?;
+
+        Ok(http::Response::builder()
+            .status(status)
+            .header(CONTENT_TYPE, "application/json")
+            .body(body)
+            .expect("status code and header value are always valid"))
+    }
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "lowercase")]
 enum Status {
@@ -160,28 +190,6 @@ where
             data: data.map(Data::Value),
             http_status,
         }
-    }
-
-    /// Serialises this `JSendResponse` to JSON and wraps it in an
-    /// [`http::Response`].
-    ///
-    /// This serialises [self] to a JSON byte vector and builds an http
-    /// response using the `http_status` this response was constructed with.
-    /// The `Content-Type` header is set to `application/json` so callers
-    /// reading the raw `http::Response` know how to interpret the body.
-    ///
-    /// The
-    /// [JSend specification](https://github.com/omniti-labs/jsend#whither-http)
-    /// advises pairing a JSend response body with whatever HTTP status code is
-    /// most appropriate to it; this method carries out that pairing.
-    pub fn into_response(self) -> Result<Response<Vec<u8>>, Error> {
-        let body = serde_json::to_vec(&self)?;
-
-        Ok(http::Response::builder()
-            .status(self.http_status)
-            .header(CONTENT_TYPE, "application/json")
-            .body(body)
-            .expect("status code and header value are always valid"))
     }
 }
 
