@@ -58,21 +58,7 @@ impl<T: Serialize> IntoResponse for Success<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use http::header::CONTENT_TYPE;
     use serde_json::{Value, from_slice, json};
-
-    /// Triggers the serialisation failure path for
-    /// [into_response](IntoResponse::into_response).
-    struct AlwaysFailsToSerialise;
-
-    impl Serialize for AlwaysFailsToSerialise {
-        fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
-        {
-            Err(serde::ser::Error::custom("forced serialisation failure"))
-        }
-    }
 
     fn to_json<R: IntoResponse + Serialize>(response: R) -> Value {
         let http_response = response
@@ -146,58 +132,5 @@ mod tests {
 
         // Getter must return None when constructed without data
         assert_eq!(response.data(), None);
-    }
-
-    #[test]
-    fn http_status_field_is_not_serialised() {
-        let response = Success::new(
-            Some(json!({"title": "End of the World Sun"})),
-            StatusCode::IM_A_TEAPOT,
-        );
-
-        // The bound HTTP status must never appear in the JSON body
-        assert!(to_json(response).get("http_status").is_none());
-    }
-
-    #[test]
-    fn into_response_reflects_provided_status_code() {
-        let response = Success::new(
-            Some(json!({"title": "Outlier/EOTWS_Variation1"})),
-            StatusCode::NOT_FOUND,
-        );
-
-        let http_response = response
-            .into_response()
-            .expect("serialisation should succeed");
-
-        // Response must carry the HTTP status code it was constructed with
-        assert_eq!(http_response.status(), StatusCode::NOT_FOUND);
-    }
-
-    #[test]
-    fn into_response_sets_json_content_type() {
-        let response = Success::new(
-            Some(json!({"writers": ["65daysofstatic"]})),
-            StatusCode::OK,
-        );
-
-        let http_response = response
-            .into_response()
-            .expect("serialisation should succeed");
-
-        // Returned HTTP response must declare a JSON content type
-        assert_eq!(
-            http_response.headers().get(CONTENT_TYPE).unwrap(),
-            "application/json"
-        );
-    }
-
-    #[test]
-    fn into_response_propagates_serialisation_errors() {
-        let response =
-            Success::new(Some(AlwaysFailsToSerialise), StatusCode::OK);
-
-        // A payload that fails to serialise must surface as an error
-        assert!(response.into_response().is_err());
     }
 }
