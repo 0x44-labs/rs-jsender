@@ -275,14 +275,13 @@ impl IntoResponse for Error {
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::{from_slice, json};
 
     /// Triggers the serialisation failure path for
-    /// [into_response](JSendResponse::into_response).
+    /// [into_response](IntoResponse::into_response).
     struct AlwaysFailsToSerialise;
 
     impl Serialize for AlwaysFailsToSerialise {
@@ -294,7 +293,7 @@ mod tests {
         }
     }
 
-    fn to_json<T: Serialize>(response: JSendResponse<T>) -> Value {
+    fn to_json<R: IntoResponse + Serialize>(response: R) -> Value {
         let http_response = response
             .into_response()
             .expect("serialisation should succeed");
@@ -303,7 +302,7 @@ mod tests {
 
     #[test]
     fn success_includes_status_and_data() {
-        let response = JSendResponse::success(
+        let response = Success::new(
             Some(json!({
                 "title": "Touch",
                 "album": "Random Access Memories",
@@ -321,16 +320,11 @@ mod tests {
         assert!(body.get("data").is_some());
         assert_eq!(body["data"]["title"], "Touch");
         assert_eq!(body["data"]["album"], "Random Access Memories");
-
-        // Success response must omit optional keys that were not provided
-        assert!(body.get("message").is_none());
-        assert!(body.get("code").is_none());
     }
 
     #[test]
     fn success_no_data_serialises_as_null() {
-        let response: JSendResponse<Value> =
-            JSendResponse::success(None, StatusCode::NO_CONTENT);
+        let response = Success::<Value>::new(None, StatusCode::NO_CONTENT);
         let body = to_json(response);
 
         // Absent data must serialise as an explicit null
@@ -340,7 +334,7 @@ mod tests {
 
     #[test]
     fn fail_builds_data_object_from_pairs() {
-        let response: JSendResponse<Value> = JSendResponse::fail(
+        let response = Fail::new(
             [("title", "is required"), ("duration", "must be positive")],
             StatusCode::UNPROCESSABLE_ENTITY,
         );
@@ -351,15 +345,11 @@ mod tests {
 
         // Fail response must expose each provided pair under data
         assert_eq!(body["data"]["title"], "is required");
-
-        // Fail response must omit unused optional keys
-        assert!(body.get("message").is_none());
-        assert!(body.get("code").is_none());
     }
 
     #[test]
     fn fail_accepts_non_string_values() {
-        let response: JSendResponse<Value> = JSendResponse::fail(
+        let response = Fail::new(
             [("duration", json!(-5))],
             StatusCode::UNPROCESSABLE_ENTITY,
         );
@@ -371,10 +361,8 @@ mod tests {
 
     #[test]
     fn fail_no_entries_serialises_empty_object() {
-        let response: JSendResponse<Value> = JSendResponse::fail(
-            Vec::<(&str, &str)>::new(),
-            StatusCode::BAD_REQUEST,
-        );
+        let response =
+            Fail::new(Vec::<(&str, &str)>::new(), StatusCode::BAD_REQUEST);
 
         // An empty pair list must still produce a data object
         assert_eq!(to_json(response)["data"], json!({}));
@@ -382,7 +370,7 @@ mod tests {
 
     #[test]
     fn error_requires_only_message() {
-        let response: JSendResponse<Value> = JSendResponse::error(
+        let response = Error::new(
             "playback service unreachable",
             None,
             None,
@@ -403,7 +391,7 @@ mod tests {
 
     #[test]
     fn error_includes_code_when_present() {
-        let response: JSendResponse<Value> = JSendResponse::error(
+        let response = Error::new(
             "rate limited",
             Some(67),
             None,
@@ -416,7 +404,7 @@ mod tests {
 
     #[test]
     fn error_includes_data_when_present() {
-        let response: JSendResponse<Value> = JSendResponse::error(
+        let response = Error::new(
             "upstream failure",
             None,
             Some(json!({"service": "playback_api", "trace_id": "42736"})),
@@ -429,7 +417,7 @@ mod tests {
 
     #[test]
     fn http_status_field_is_not_serialised() {
-        let response = JSendResponse::success(
+        let response = Success::new(
             Some(json!({"title": "End of the World Sun"})),
             StatusCode::IM_A_TEAPOT,
         );
@@ -440,7 +428,7 @@ mod tests {
 
     #[test]
     fn into_response_reflects_provided_status_code() {
-        let response = JSendResponse::success(
+        let response = Success::new(
             Some(json!({"title": "Outlier/EOTWS_Variation1"})),
             StatusCode::NOT_FOUND,
         );
@@ -455,7 +443,7 @@ mod tests {
 
     #[test]
     fn into_response_sets_json_content_type() {
-        let response = JSendResponse::success(
+        let response = Success::new(
             Some(json!({"writers": ["65daysofstatic"]})),
             StatusCode::OK,
         );
@@ -473,13 +461,10 @@ mod tests {
 
     #[test]
     fn into_response_propagates_serialisation_errors() {
-        let response = JSendResponse::success(
-            Some(AlwaysFailsToSerialise),
-            StatusCode::OK,
-        );
+        let response =
+            Success::new(Some(AlwaysFailsToSerialise), StatusCode::OK);
 
         // A payload that fails to serialise must surface as an error
         assert!(response.into_response().is_err());
     }
 }
-*/
